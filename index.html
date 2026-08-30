@@ -1,0 +1,1038 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Pantry">
+<meta name="theme-color" content="#101917">
+<title>Pantry</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#101917;
+  --surface:#182422;
+  --raised:#22302D;
+  --line:#2E3F3B;
+  --text:#E8EDE9;
+  --muted:#8FA39D;
+  --in:#5FD08A;
+  --out:#F2A03D;
+  --danger:#E56B6B;
+  --display:"IBM Plex Sans Condensed",-apple-system,system-ui,sans-serif;
+  --body:"IBM Plex Sans",-apple-system,system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  --pad:16px;
+  --safe-t:env(safe-area-inset-top,0px);
+  --safe-b:env(safe-area-inset-bottom,0px);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0;height:100%;overscroll-behavior:none}
+body{
+  background:var(--bg);color:var(--text);font-family:var(--body);
+  font-size:16px;line-height:1.4;
+  -webkit-font-smoothing:antialiased;
+}
+button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
+input,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--in);outline-offset:2px}
+
+.view{display:none;flex-direction:column;height:100dvh}
+.view.active{display:flex}
+
+/* ---- bin tag header ---- */
+.tag{
+  padding:calc(var(--safe-t) + 14px) var(--pad) 12px;
+  border-bottom:1px solid var(--line);
+  background:var(--surface);
+  display:flex;align-items:flex-end;gap:12px;
+}
+.tag .eyebrow{
+  font-family:var(--display);font-size:11px;font-weight:600;
+  letter-spacing:.18em;text-transform:uppercase;color:var(--muted);
+  display:block;margin-bottom:2px;
+}
+.tag h1{
+  font-family:var(--display);font-weight:700;font-size:30px;
+  letter-spacing:.02em;text-transform:uppercase;margin:0;line-height:1;
+}
+.tag .count{
+  margin-left:auto;font-family:var(--mono);font-size:13px;
+  color:var(--muted);white-space:nowrap;padding-bottom:3px;
+}
+.backbtn{
+  font-family:var(--display);font-size:12px;font-weight:600;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--muted);padding:6px 10px 6px 0;
+}
+
+.scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:var(--pad);padding-bottom:120px}
+
+/* ---- location tiles ---- */
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.tile{
+  position:relative;background:var(--surface);border:1px solid var(--line);
+  border-radius:4px;padding:14px 12px 12px;text-align:left;min-height:96px;
+  display:flex;flex-direction:column;justify-content:space-between;
+  transition:background .12s;
+}
+.tile::before{
+  content:"";position:absolute;top:0;left:0;right:0;height:3px;
+  background:var(--strip,var(--line));border-radius:4px 4px 0 0;
+}
+.tile:active{background:var(--raised)}
+.tile .name{
+  font-family:var(--display);font-weight:600;font-size:17px;
+  text-transform:uppercase;letter-spacing:.06em;padding-right:22px;
+}
+.tile .n{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.tile .more{
+  position:absolute;top:8px;right:4px;padding:6px 10px;color:var(--muted);
+  font-size:16px;line-height:1;
+}
+.tile.add{
+  border-style:dashed;background:none;align-items:center;justify-content:center;
+  color:var(--muted);font-family:var(--display);text-transform:uppercase;
+  letter-spacing:.1em;font-size:13px;font-weight:600;
+}
+.tile.add::before{display:none}
+
+/* ---- chips ---- */
+.chips{display:flex;gap:6px;overflow-x:auto;padding:10px var(--pad);border-bottom:1px solid var(--line);scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{
+  flex:0 0 auto;padding:5px 11px;border:1px solid var(--line);border-radius:100px;
+  font-size:13px;color:var(--muted);white-space:nowrap;
+}
+.chip.on{background:var(--text);color:var(--bg);border-color:var(--text);font-weight:500}
+
+/* ---- item rows ---- */
+.row{
+  display:flex;align-items:center;gap:12px;padding:12px 4px;
+  border-bottom:1px solid var(--line);
+}
+.row .info{flex:1;min-width:0}
+.row .nm{font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row .sub{font-size:12px;color:var(--muted);font-family:var(--mono);margin-top:2px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.stepper{display:flex;align-items:center;gap:2px;flex:0 0 auto}
+.stepper button{
+  width:34px;height:34px;border:1px solid var(--line);border-radius:3px;
+  font-size:18px;line-height:1;display:grid;place-items:center;color:var(--muted);
+}
+.stepper button:active{background:var(--raised)}
+.stepper .q{
+  font-family:var(--mono);font-size:16px;font-weight:600;min-width:30px;text-align:center;
+}
+
+.empty{padding:48px 8px;text-align:center;color:var(--muted)}
+.empty strong{display:block;font-family:var(--display);text-transform:uppercase;
+  letter-spacing:.1em;color:var(--text);margin-bottom:6px;font-size:15px}
+
+/* ---- bottom action bar ---- */
+.bar{
+  position:fixed;left:0;right:0;bottom:0;display:flex;gap:8px;
+  padding:10px var(--pad) calc(10px + var(--safe-b));
+  background:linear-gradient(to top,var(--bg) 65%,transparent);
+}
+.act{
+  flex:1;padding:14px 8px;border-radius:4px;text-align:center;
+  font-family:var(--display);font-weight:600;font-size:14px;
+  text-transform:uppercase;letter-spacing:.08em;
+  border:1px solid var(--line);background:var(--surface);
+}
+.act.in{background:var(--in);color:#08130D;border-color:var(--in)}
+.act.out{background:var(--out);color:#1A1103;border-color:var(--out)}
+.act:active{opacity:.75}
+
+/* ---- scanner ---- */
+#view-scan{background:#000}
+.scanhead{
+  padding:calc(var(--safe-t) + 12px) var(--pad) 12px;display:flex;align-items:center;gap:12px;
+  background:var(--mode,var(--in));color:#08130D;
+}
+.scanhead .lbl{font-family:var(--display);font-weight:700;font-size:18px;
+  text-transform:uppercase;letter-spacing:.1em}
+.scanhead .loc{font-family:var(--mono);font-size:12px;opacity:.75;margin-left:auto}
+.scanhead .x{font-size:22px;line-height:1;padding:0 4px 0 8px;font-weight:600}
+#reader{width:100%;flex:1;position:relative;overflow:hidden;background:#000}
+#reader video{width:100%!important;height:100%!important;object-fit:cover}
+#reader img{display:none}
+.scanfoot{
+  padding:14px var(--pad) calc(14px + var(--safe-b));background:#000;
+  display:flex;align-items:center;gap:12px;
+}
+.scanfoot p{margin:0;font-size:13px;color:var(--muted);flex:1}
+.linkbtn{font-size:13px;color:var(--text);text-decoration:underline;text-underline-offset:3px;
+  padding:6px 0;white-space:nowrap}
+.flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none}
+.flash.go{animation:fl .28s ease-out}
+@keyframes fl{from{opacity:.55}to{opacity:0}}
+
+/* ---- sheet ---- */
+.scrim{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;z-index:40}
+.scrim.on{display:block}
+.sheet{
+  position:fixed;left:0;right:0;bottom:0;z-index:41;background:var(--surface);
+  border-top:1px solid var(--line);border-radius:12px 12px 0 0;
+  padding:18px var(--pad) calc(18px + var(--safe-b));
+  transform:translateY(101%);transition:transform .2s ease-out;
+  max-height:88dvh;overflow-y:auto;
+}
+.sheet.on{transform:translateY(0)}
+.sheet h2{font-family:var(--display);text-transform:uppercase;letter-spacing:.1em;
+  font-size:14px;font-weight:600;color:var(--muted);margin:0 0 14px}
+label{display:block;font-size:12px;color:var(--muted);margin:14px 0 5px;
+  font-family:var(--display);text-transform:uppercase;letter-spacing:.1em;font-weight:600}
+input[type=text],input[type=number],input[type=tel],select{
+  width:100%;padding:12px;background:var(--bg);border:1px solid var(--line);
+  border-radius:4px;font-size:16px;
+}
+select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);
+  background-position:calc(100% - 18px) 22px,calc(100% - 13px) 22px;
+  background-size:5px 5px,5px 5px;background-repeat:no-repeat}
+.sheetbtns{display:flex;gap:8px;margin-top:20px}
+.btn{flex:1;padding:14px;border-radius:4px;text-align:center;font-family:var(--display);
+  font-weight:600;text-transform:uppercase;letter-spacing:.08em;font-size:14px;
+  border:1px solid var(--line)}
+.btn.primary{background:var(--in);color:#08130D;border-color:var(--in)}
+.btn.ghost{color:var(--muted)}
+.btn.danger{color:var(--danger);border-color:var(--danger);flex:0 0 auto;padding:14px 18px}
+.hint{font-size:12px;color:var(--muted);font-family:var(--mono);margin:10px 0 0}
+
+/* ---- toast ---- */
+#toast{
+  position:fixed;left:var(--pad);right:var(--pad);bottom:calc(96px + var(--safe-b));
+  z-index:50;display:flex;flex-direction:column;gap:6px;pointer-events:none;
+}
+.tst{
+  background:var(--raised);border:1px solid var(--line);border-left:3px solid var(--in);
+  border-radius:4px;padding:11px 13px;font-size:14px;
+  animation:up .18s ease-out;pointer-events:auto;
+  display:flex;align-items:center;gap:10px;
+}
+.tst.out{border-left-color:var(--out)}
+.tst.bad{border-left-color:var(--danger)}
+.tst .undo{margin-left:auto;font-family:var(--display);text-transform:uppercase;
+  letter-spacing:.1em;font-size:12px;font-weight:600;color:var(--in);padding:4px 2px}
+@keyframes up{from{transform:translateY(8px);opacity:0}to{transform:none;opacity:1}}
+
+/* ---- banner + home links ---- */
+.homelinks{display:flex;gap:20px;margin-top:14px;flex-wrap:wrap}
+.banner{
+  background:var(--raised);border:1px solid var(--line);border-left:3px solid var(--out);
+  border-radius:4px;padding:13px;margin-bottom:16px;font-size:13.5px;line-height:1.45;
+}
+.banner strong{display:block;font-family:var(--display);text-transform:uppercase;
+  letter-spacing:.1em;font-size:12px;color:var(--out);margin-bottom:5px}
+.banner .dismiss{margin-top:10px;font-family:var(--display);text-transform:uppercase;
+  letter-spacing:.1em;font-size:11px;font-weight:600;color:var(--muted);padding:2px 0}
+textarea{width:100%;padding:12px;background:var(--bg);border:1px solid var(--line);
+  border-radius:4px;font:14px/1.5 var(--mono);color:var(--text);resize:vertical}
+input[type=file]{width:100%;font-size:14px;color:var(--muted);padding:10px 0}
+
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+
+<!-- ============ HOME : LOCATIONS ============ -->
+<section id="view-home" class="view active">
+  <div class="tag">
+    <div>
+      <span class="eyebrow">Inventory</span>
+      <h1>Pantry</h1>
+    </div>
+    <span class="count" id="home-count"></span>
+  </div>
+  <div class="scroll">
+    <div id="banner"></div>
+    <div class="grid" id="loc-grid"></div>
+    <p class="hint" style="margin-top:22px">Pick a place to start. Everything you scan goes into the place you opened.</p>
+    <div class="homelinks">
+      <button class="linkbtn" id="btn-cats">Edit categories</button>
+      <button class="linkbtn" id="btn-backup">Back up &amp; restore</button>
+    </div>
+  </div>
+</section>
+
+<!-- ============ LOCATION DETAIL ============ -->
+<section id="view-location" class="view">
+  <div class="tag">
+    <div>
+      <button class="backbtn" id="btn-back">&larr; All places</button>
+      <h1 id="loc-name">Fridge</h1>
+    </div>
+    <span class="count" id="loc-count"></span>
+  </div>
+  <div class="chips" id="cat-chips"></div>
+  <div class="scroll" id="item-list"></div>
+  <div class="bar">
+    <button class="act in" id="btn-scan-in">Stock in</button>
+    <button class="act out" id="btn-scan-out">Take out</button>
+    <button class="act" id="btn-manual">By hand</button>
+  </div>
+</section>
+
+<!-- ============ SCANNER ============ -->
+<section id="view-scan" class="view">
+  <div class="scanhead" id="scanhead">
+    <button class="x" id="btn-scan-close">&times;</button>
+    <span class="lbl" id="scan-mode">Stock in</span>
+    <span class="loc" id="scan-loc"></span>
+  </div>
+  <div id="reader"><div class="flash" id="flash"></div></div>
+  <div class="scanfoot">
+    <p id="scan-hint">Hold the barcode inside the frame.</p>
+    <button class="linkbtn" id="btn-type">Type it</button>
+  </div>
+</section>
+
+<div class="scrim" id="scrim"></div>
+<div class="sheet" id="sheet"></div>
+<div id="toast"></div>
+
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script>
+"use strict";
+
+/* ============================================================
+   STORAGE  — localStorage, with an in-memory fallback so the
+   app still runs in sandboxed previews that block it.
+   ============================================================ */
+const Store = (() => {
+  const KEY   = "pantry.v1";
+  const SALV  = "pantry.v1.unreadable";   // where a corrupt blob gets parked
+  const PROBE = "pantry.__probe";         // namespaced so it can't clobber a neighbour
+  let mem = null, ok = true;
+  try { localStorage.setItem(PROBE,"1"); localStorage.removeItem(PROBE); }
+  catch(e){ ok = false; }
+  return {
+    persistent: ok,
+    load(){
+      if(!ok) return mem;
+      let raw;
+      try { raw = localStorage.getItem(KEY); } catch(e){ return null; }
+      if(!raw) return null;
+      try { return JSON.parse(raw); }
+      catch(e){
+        // don't throw the damaged copy away — park it so it can be recovered by hand
+        try { localStorage.setItem(SALV, raw); } catch(e2){}
+        return "UNREADABLE";
+      }
+    },
+    save(d){
+      mem = d;
+      if(!ok) return false;
+      try { localStorage.setItem(KEY, JSON.stringify(d)); return true; }
+      catch(e){ return false; }
+    }
+  };
+})();
+
+const uid = () => Math.random().toString(36).slice(2,10);
+
+const SEED = {
+  locations: [
+    {id:uid(), name:"Fridge",        hue:"#5FD08A"},
+    {id:uid(), name:"Freezer",       hue:"#6FB6D9"},
+    {id:uid(), name:"Pantry",        hue:"#F2A03D"},
+    {id:uid(), name:"Spice cabinet", hue:"#D98A5F"},
+    {id:uid(), name:"Basement",      hue:"#9B8FD0"}
+  ],
+  categories: ["Produce","Dairy","Meat & fish","Grains & pasta","Canned & jarred",
+               "Baking","Spices","Snacks","Drinks","Frozen","Cleaning","Other"],
+  items: [],
+  known: {}      // barcode -> {name, brand, category}
+};
+
+/* Coerce whatever came out of storage into a shape the app can render.
+   Anything unrecognisable is dropped rather than allowed to throw mid-render. */
+function normalize(d){
+  if(!d || typeof d !== "object") return null;
+  if(!Array.isArray(d.items) && !Array.isArray(d.locations)) return null;
+
+  const locations = (Array.isArray(d.locations) ? d.locations : [])
+    .filter(l => l && typeof l.id === "string" && typeof l.name === "string" && l.name.trim())
+    .map(l => ({id:l.id, name:l.name.trim(), hue: typeof l.hue==="string" ? l.hue : "#8FA39D"}));
+  if(!locations.length) JSON.parse(JSON.stringify(SEED.locations)).forEach(l => locations.push(l));
+
+  const categories = (Array.isArray(d.categories) ? d.categories : [])
+    .filter(c => typeof c === "string" && c.trim()).map(c => c.trim());
+
+  const ids = new Set(locations.map(l => l.id));
+  const items = (Array.isArray(d.items) ? d.items : [])
+    .filter(i => i && typeof i.name === "string" && i.name.trim())
+    .map(i => ({
+      id:        typeof i.id === "string" ? i.id : uid(),
+      name:      i.name.trim(),
+      brand:     typeof i.brand === "string" ? i.brand : "",
+      category:  typeof i.category === "string" ? i.category : "Other",
+      // an item pointing at a deleted place would be invisible forever — rehome it
+      locationId: ids.has(i.locationId) ? i.locationId : locations[0].id,
+      qty:       Math.max(1, parseInt(i.qty,10) || 1),
+      barcode:   typeof i.barcode === "string" ? i.barcode : "",
+      updatedAt: typeof i.updatedAt === "number" ? i.updatedAt : Date.now()
+    }));
+
+  const known = {};
+  if(d.known && typeof d.known === "object" && !Array.isArray(d.known)){
+    for(const [code, v] of Object.entries(d.known))
+      if(v && typeof v.name === "string") known[code] = {
+        name: v.name, brand: typeof v.brand==="string"?v.brand:"",
+        category: typeof v.category==="string"?v.category:"Other"
+      };
+  }
+
+  return {
+    locations,
+    categories: categories.length ? categories : SEED.categories.slice(),
+    items, known,
+    bannerOff: !!d.bannerOff
+  };
+}
+
+const rawLoad   = Store.load();
+const unreadable = rawLoad === "UNREADABLE";
+let db = normalize(unreadable ? null : rawLoad) || JSON.parse(JSON.stringify(SEED));
+
+/* A failed write is the one error that must never be silent: you'd keep
+   scanning into a list that isn't being kept. */
+let saveFailed = false;
+function save(){
+  const done = Store.save(db);
+  if(!done && Store.persistent && !saveFailed){
+    saveFailed = true;
+    toast("Not saving — storage is full or blocked. Export your list now.", "bad");
+  } else if(done){
+    saveFailed = false;
+  }
+  return done;
+}
+
+/* ---- view state ---- */
+let currentLoc = null;
+let catFilter  = "All";
+let scanMode   = "in";
+let scanner    = null;
+let lastCode   = "";
+let lastAt     = 0;
+
+/* ============================================================
+   HELPERS
+   ============================================================ */
+const $  = s => document.querySelector(s);
+const el = (t,c,txt) => { const n=document.createElement(t); if(c)n.className=c; if(txt!=null)n.textContent=txt; return n; };
+const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+const itemsIn = id => db.items.filter(i => i.locationId === id);
+const totalIn = id => itemsIn(id).reduce((s,i) => s + i.qty, 0);
+
+const isStandalone = () =>
+  window.navigator.standalone === true ||
+  (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches);
+
+const isIOS = /iP(hone|ad|od)/.test(navigator.userAgent) ||
+  (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+
+function show(v){
+  document.querySelectorAll(".view").forEach(n => n.classList.remove("active"));
+  $("#view-" + v).classList.add("active");
+}
+
+function beep(){
+  try{
+    const C = window.AudioContext || window.webkitAudioContext;
+    if(!C) return;
+    const ctx = beep.ctx || (beep.ctx = new C());
+    if(ctx.state === "suspended") ctx.resume();
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = "square"; o.frequency.value = 880;
+    g.gain.setValueAtTime(.06, ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(.0001, ctx.currentTime + .12);
+    o.connect(g); g.connect(ctx.destination);
+    o.start(); o.stop(ctx.currentTime + .13);
+  }catch(e){}
+}
+
+function toast(msg, kind, undo){
+  const t = el("div","tst" + (kind ? " " + kind : ""));
+  t.appendChild(el("span",null,msg));
+  if(undo){
+    const b = el("button","undo","Undo");
+    b.onclick = () => { undo(); t.remove(); };
+    t.appendChild(b);
+  }
+  $("#toast").appendChild(t);
+  setTimeout(() => t.remove(), undo ? 5000 : 2600);
+}
+
+/* ============================================================
+   SHEET
+   ============================================================ */
+function openSheet(html, wire){
+  const s = $("#sheet");
+  s.innerHTML = html;
+  $("#scrim").classList.add("on");
+  requestAnimationFrame(() => s.classList.add("on"));
+  if(wire) wire(s);
+}
+function closeSheet(){
+  $("#sheet").classList.remove("on");
+  $("#scrim").classList.remove("on");
+  if(document.querySelector("#view-scan.active") && scanner) resumeScan();
+}
+$("#scrim").onclick = closeSheet;
+
+const catOptions = sel => db.categories
+  .map(c => `<option value="${esc(c)}"${c===sel?" selected":""}>${esc(c)}</option>`).join("");
+const locOptions = sel => db.locations
+  .map(l => `<option value="${l.id}"${l.id===sel?" selected":""}>${esc(l.name)}</option>`).join("");
+
+/* ============================================================
+   HOME
+   ============================================================ */
+function renderBanner(){
+  const b = $("#banner");
+  b.innerHTML = "";
+  if(isStandalone() || db.bannerOff || !Store.persistent) return;
+  const n = el("div","banner");
+  n.appendChild(el("strong", null, "Running in the browser"));
+  n.appendChild(el("div", null, isIOS
+    ? "Safari clears site data after seven days without a visit. Added to your Home Screen, this app is exempt — Share \u2192 Add to Home Screen. Do it before you enter much: the browser and the Home Screen app keep separate lists, and this one won't carry over."
+    : "Install this to your home screen so the browser doesn't clear its data on you. Until then, back up often."));
+  const d = el("button","dismiss","Dismiss");
+  d.onclick = () => { db.bannerOff = true; save(); renderBanner(); };
+  n.appendChild(d);
+  b.appendChild(n);
+}
+
+function renderHome(){
+  renderBanner();
+  const g = $("#loc-grid");
+  g.innerHTML = "";
+  db.locations.forEach(loc => {
+    const t = el("button","tile");
+    t.style.setProperty("--strip", loc.hue || "#2E3F3B");
+    t.appendChild(el("div","name",loc.name));
+    const n = itemsIn(loc.id).length;
+    t.appendChild(el("div","n", n ? `${n} item${n>1?"s":""} · ${totalIn(loc.id)} on hand` : "empty"));
+    t.onclick = () => openLoc(loc.id);
+    const more = el("button","more","\u22EF");
+    more.setAttribute("aria-label","Edit " + loc.name);
+    more.onclick = e => { e.stopPropagation(); editLoc(loc); };
+    t.appendChild(more);
+    g.appendChild(t);
+  });
+  const add = el("button","tile add","+ New place");
+  add.onclick = () => editLoc(null);
+  g.appendChild(add);
+
+  const tot = db.items.reduce((s,i) => s + i.qty, 0);
+  $("#home-count").textContent = tot ? `${tot} on hand` : "";
+}
+
+function editLoc(loc){
+  openSheet(`
+    <h2>${loc ? "Edit place" : "New place"}</h2>
+    <label for="f-ln">Name</label>
+    <input type="text" id="f-ln" value="${loc?esc(loc.name):""}" placeholder="Garage shelf" autocomplete="off">
+    <label for="f-lh">Tag colour</label>
+    <select id="f-lh">
+      ${["#5FD08A","#6FB6D9","#F2A03D","#D98A5F","#9B8FD0","#8FA39D"]
+        .map(h=>`<option value="${h}"${loc&&loc.hue===h?" selected":""}>${
+          {"#5FD08A":"Green","#6FB6D9":"Blue","#F2A03D":"Amber","#D98A5F":"Clay","#9B8FD0":"Violet","#8FA39D":"Grey"}[h]
+        }</option>`).join("")}
+    </select>
+    <div class="sheetbtns">
+      ${loc?'<button class="btn danger" id="f-del">Delete</button>':""}
+      <button class="btn ghost" id="f-cancel">Cancel</button>
+      <button class="btn primary" id="f-save">Save</button>
+    </div>`, s => {
+    s.querySelector("#f-cancel").onclick = closeSheet;
+    s.querySelector("#f-save").onclick = () => {
+      const name = s.querySelector("#f-ln").value.trim();
+      if(!name){ toast("Give the place a name.","bad"); return; }
+      const hue = s.querySelector("#f-lh").value;
+      if(loc){ loc.name = name; loc.hue = hue; }
+      else db.locations.push({id:uid(), name, hue});
+      save(); renderHome(); closeSheet();
+    };
+    const d = s.querySelector("#f-del");
+    if(d) d.onclick = () => {
+      const n = itemsIn(loc.id).length;
+      if(n && !confirm(`${loc.name} still holds ${n} item${n>1?"s":""}. Delete the place and its contents?`)) return;
+      db.items = db.items.filter(i => i.locationId !== loc.id);
+      db.locations = db.locations.filter(l => l.id !== loc.id);
+      save(); renderHome(); closeSheet();
+    };
+  });
+}
+
+$("#btn-cats").onclick = () => {
+  openSheet(`
+    <h2>Categories</h2>
+    <label for="f-cats">One per line</label>
+    <textarea id="f-cats" rows="12" style="width:100%;padding:12px;background:var(--bg);
+      border:1px solid var(--line);border-radius:4px;font:16px/1.5 var(--body);color:var(--text)"
+    >${esc(db.categories.join("\n"))}</textarea>
+    <p class="hint">Removing a category leaves existing items alone.</p>
+    <div class="sheetbtns">
+      <button class="btn ghost" id="f-cancel">Cancel</button>
+      <button class="btn primary" id="f-save">Save</button>
+    </div>`, s => {
+    s.querySelector("#f-cancel").onclick = closeSheet;
+    s.querySelector("#f-save").onclick = () => {
+      const list = s.querySelector("#f-cats").value.split("\n").map(x=>x.trim()).filter(Boolean);
+      if(list.length) db.categories = list;
+      save(); closeSheet();
+    };
+  });
+};
+
+/* ============================================================
+   BACK UP & RESTORE  — the only copy of this data is on this
+   device, so make it trivial to get a copy off it.
+   ============================================================ */
+$("#btn-backup").onclick = () => {
+  const n = db.items.length;
+  openSheet(`
+    <h2>Back up &amp; restore</h2>
+    <p class="hint" style="margin:0 0 16px">${n} item${n===1?"":"s"} in ${db.locations.length} places, stored on this device only. Nothing syncs.</p>
+    <div class="sheetbtns" style="margin-top:0">
+      <button class="btn primary" id="f-dl">Download file</button>
+      <button class="btn ghost" id="f-copy">Copy</button>
+    </div>
+    <label for="f-file">Restore from a file</label>
+    <input type="file" id="f-file" accept="application/json,.json,text/plain">
+    <label for="f-paste">Or paste a backup</label>
+    <textarea id="f-paste" rows="4" placeholder='{"locations":[...' autocomplete="off"></textarea>
+    <p class="hint">Restoring replaces everything on this device.</p>
+    <div class="sheetbtns">
+      <button class="btn ghost" id="f-cancel">Close</button>
+      <button class="btn primary" id="f-restore">Restore</button>
+    </div>`, s => {
+    const json = () => JSON.stringify(db, null, 2);
+
+    s.querySelector("#f-dl").onclick = () => {
+      try{
+        const blob = new Blob([json()], {type:"application/json"});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "pantry-" + new Date().toISOString().slice(0,10) + ".json";
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 2000);
+      }catch(e){ toast("Download failed — use Copy instead.","bad"); }
+    };
+
+    s.querySelector("#f-copy").onclick = async () => {
+      try{
+        await navigator.clipboard.writeText(json());
+        toast("Backup copied. Paste it somewhere safe.");
+      }catch(e){
+        s.querySelector("#f-paste").value = json();
+        toast("Clipboard blocked — select the text below and copy it.","bad");
+      }
+    };
+
+    s.querySelector("#f-file").onchange = e => {
+      const f = e.target.files && e.target.files[0];
+      if(!f) return;
+      const r = new FileReader();
+      r.onload = () => applyImport(String(r.result));
+      r.onerror = () => toast("Couldn't read that file.","bad");
+      r.readAsText(f);
+    };
+
+    s.querySelector("#f-restore").onclick = () => {
+      const t = s.querySelector("#f-paste").value.trim();
+      if(!t){ toast("Choose a file or paste a backup first.","bad"); return; }
+      applyImport(t);
+    };
+    s.querySelector("#f-cancel").onclick = closeSheet;
+  });
+};
+
+function applyImport(text){
+  let parsed;
+  try { parsed = JSON.parse(text); }
+  catch(e){ toast("That isn't a readable backup.","bad"); return; }
+  const next = normalize(parsed);
+  if(!next){ toast("No pantry data in that file.","bad"); return; }
+  if(!confirm(`Replace everything on this device with ${next.items.length} item(s) from this backup?`)) return;
+  db = next;
+  if(save()) toast(`Restored ${next.items.length} item${next.items.length===1?"":"s"}`);
+  renderHome();
+  closeSheet();
+}
+
+/* ============================================================
+   LOCATION DETAIL
+   ============================================================ */
+function openLoc(id){
+  currentLoc = db.locations.find(l => l.id === id);
+  catFilter = "All";
+  renderLoc();
+  show("location");
+}
+$("#btn-back").onclick = () => { renderHome(); show("home"); };
+
+function renderLoc(){
+  if(!currentLoc) return;
+  $("#loc-name").textContent = currentLoc.name;
+  const items = itemsIn(currentLoc.id);
+  $("#loc-count").textContent = items.length
+    ? `${items.length} item${items.length>1?"s":""} · ${totalIn(currentLoc.id)} on hand` : "";
+
+  // category chips, only ones actually in use
+  const used = ["All", ...[...new Set(items.map(i => i.category))].sort()];
+  const cc = $("#cat-chips");
+  cc.innerHTML = "";
+  cc.style.display = items.length ? "flex" : "none";
+  used.forEach(c => {
+    const b = el("button","chip" + (c===catFilter?" on":""), c);
+    b.onclick = () => { catFilter = c; renderLoc(); };
+    cc.appendChild(b);
+  });
+
+  const list = $("#item-list");
+  list.innerHTML = "";
+  const shown = items
+    .filter(i => catFilter === "All" || i.category === catFilter)
+    .sort((a,b) => a.name.localeCompare(b.name));
+
+  if(!shown.length){
+    const e = el("div","empty");
+    e.appendChild(el("strong",null, items.length ? "Nothing in " + catFilter : currentLoc.name + " is empty"));
+    e.appendChild(el("div",null, items.length ? "Try another category." : "Scan something in, or add it by hand."));
+    list.appendChild(e);
+    return;
+  }
+
+  shown.forEach(it => {
+    const r = el("div","row");
+    const info = el("div","info");
+    const nm = el("div","nm", it.name);
+    info.appendChild(nm);
+    const bits = [it.category];
+    if(it.brand) bits.unshift(it.brand);
+    if(it.barcode) bits.push(it.barcode);
+    info.appendChild(el("div","sub", bits.join("  ·  ")));
+    info.onclick = () => editItem(it);
+    r.appendChild(info);
+
+    const st = el("div","stepper");
+    const minus = el("button",null,"\u2212");
+    minus.onclick = () => bump(it,-1);
+    const q = el("span","q", String(it.qty));
+    const plus = el("button",null,"+");
+    plus.onclick = () => bump(it,1);
+    st.append(minus,q,plus);
+    r.appendChild(st);
+    list.appendChild(r);
+  });
+}
+
+function bump(it, d){
+  it.qty += d;
+  if(it.qty <= 0){
+    const copy = {...it};
+    db.items = db.items.filter(x => x.id !== it.id);
+    save(); renderLoc();
+    toast(`${copy.name} — all gone`, "out", () => { db.items.push(copy); save(); renderLoc(); });
+    return;
+  }
+  it.updatedAt = Date.now();
+  save(); renderLoc();
+}
+
+/* ---- add / edit an item ---- */
+function editItem(it){
+  const isNew = !it;
+  const m = it || {name:"",brand:"",category:db.categories[0],qty:1,
+                   locationId:currentLoc.id,barcode:""};
+  openSheet(`
+    <h2>${isNew ? "Add by hand" : "Edit item"}</h2>
+    <label for="f-n">Name</label>
+    <input type="text" id="f-n" value="${esc(m.name)}" placeholder="Black beans" autocomplete="off">
+    <label for="f-b">Brand <span style="text-transform:none;letter-spacing:0">(optional)</span></label>
+    <input type="text" id="f-b" value="${esc(m.brand||"")}" autocomplete="off">
+    <label for="f-c">Category</label>
+    <select id="f-c">${catOptions(m.category)}</select>
+    <label for="f-l">Place</label>
+    <select id="f-l">${locOptions(m.locationId)}</select>
+    <label for="f-q">Quantity</label>
+    <input type="number" id="f-q" value="${m.qty}" min="1" inputmode="numeric">
+    ${m.barcode?`<p class="hint">Barcode ${esc(m.barcode)}</p>`:""}
+    <div class="sheetbtns">
+      ${isNew?"":'<button class="btn danger" id="f-del">Delete</button>'}
+      <button class="btn ghost" id="f-cancel">Cancel</button>
+      <button class="btn primary" id="f-save">Save</button>
+    </div>`, s => {
+    s.querySelector("#f-cancel").onclick = closeSheet;
+    s.querySelector("#f-save").onclick = () => {
+      const name = s.querySelector("#f-n").value.trim();
+      if(!name){ toast("Give the item a name.","bad"); return; }
+      const rec = {
+        name,
+        brand: s.querySelector("#f-b").value.trim(),
+        category: s.querySelector("#f-c").value,
+        locationId: s.querySelector("#f-l").value,
+        qty: Math.max(1, parseInt(s.querySelector("#f-q").value,10) || 1),
+        barcode: m.barcode || "",
+        updatedAt: Date.now()
+      };
+      if(isNew) db.items.push({id:uid(), ...rec});
+      else Object.assign(it, rec);
+      // remember the naming so the next scan resolves instantly
+      if(rec.barcode) db.known[rec.barcode] = {name:rec.name, brand:rec.brand, category:rec.category};
+      save(); renderLoc(); closeSheet();
+      toast(isNew ? `${name} added` : `${name} saved`);
+    };
+    const d = s.querySelector("#f-del");
+    if(d) d.onclick = () => {
+      db.items = db.items.filter(x => x.id !== it.id);
+      save(); renderLoc(); closeSheet();
+    };
+  });
+}
+$("#btn-manual").onclick = () => editItem(null);
+
+/* ============================================================
+   SCANNER
+   ============================================================ */
+const FORMATS = () => {
+  const F = window.Html5QrcodeSupportedFormats;
+  if(!F) return undefined;
+  return [F.EAN_13,F.EAN_8,F.UPC_A,F.UPC_E,F.UPC_EAN_EXTENSION,
+          F.CODE_128,F.CODE_39,F.ITF,F.QR_CODE];
+};
+
+async function startScan(mode){
+  scanMode = mode;
+  const colour = mode === "in" ? "var(--in)" : "var(--out)";
+  $("#scanhead").style.setProperty("--mode", colour);
+  $("#scan-mode").textContent = mode === "in" ? "Stock in" : "Take out";
+  $("#scan-loc").textContent  = currentLoc.name;
+  $("#scan-hint").textContent = "Hold the barcode inside the frame.";
+  show("scan");
+  lastCode = ""; lastAt = 0;
+
+  if(typeof Html5Qrcode === "undefined"){
+    $("#scan-hint").textContent = "Scanner library didn't load — check your connection, or use Type it.";
+    return;
+  }
+  try{
+    scanner = new Html5Qrcode("reader", {
+      formatsToSupport: FORMATS(),
+      experimentalFeatures: { useBarCodeDetectorIfSupported: true },
+      verbose: false
+    });
+    const w = Math.min(window.innerWidth - 40, 320);
+    await scanner.start(
+      { facingMode: "environment" },
+      { fps: 10, qrbox: { width: w, height: Math.round(w * 0.55) }, aspectRatio: 1.0 },
+      onScan,
+      () => {}
+    );
+  }catch(err){
+    $("#scan-hint").textContent =
+      "No camera. Allow camera access in Safari settings, or use Type it.";
+    console.error(err);
+  }
+}
+
+async function stopScan(){
+  if(scanner){
+    try { await scanner.stop(); await scanner.clear(); } catch(e){}
+    scanner = null;
+  }
+}
+function pauseScan(){ try{ scanner && scanner.pause(true); }catch(e){} }
+function resumeScan(){ try{ scanner && scanner.resume(); }catch(e){} }
+
+$("#btn-scan-in").onclick  = () => startScan("in");
+$("#btn-scan-out").onclick = () => startScan("out");
+$("#btn-scan-close").onclick = async () => { await stopScan(); renderLoc(); show("location"); };
+
+function onScan(code){
+  const now = Date.now();
+  if(code === lastCode && now - lastAt < 2500) return;
+  lastCode = code; lastAt = now;
+  const f = $("#flash");
+  f.classList.remove("go"); void f.offsetWidth; f.classList.add("go");
+  beep();
+  handleCode(code);
+}
+
+$("#btn-type").onclick = () => {
+  pauseScan();
+  openSheet(`
+    <h2>Type the barcode</h2>
+    <label for="f-code">Number under the bars</label>
+    <input type="tel" id="f-code" inputmode="numeric" autocomplete="off" placeholder="0123456789012">
+    <div class="sheetbtns">
+      <button class="btn ghost" id="f-cancel">Cancel</button>
+      <button class="btn primary" id="f-go">Look up</button>
+    </div>`, s => {
+    s.querySelector("#f-cancel").onclick = closeSheet;
+    s.querySelector("#f-go").onclick = () => {
+      const c = s.querySelector("#f-code").value.replace(/\D/g,"");
+      if(!c){ toast("Enter the digits.","bad"); return; }
+      closeSheet();
+      handleCode(c);
+    };
+    setTimeout(()=>s.querySelector("#f-code").focus(),150);
+  });
+};
+
+/* ---- the core scan logic ---- */
+async function handleCode(code){
+  const existing = db.items.find(i => i.barcode === code && i.locationId === currentLoc.id);
+
+  if(scanMode === "out"){
+    if(!existing){
+      const known = db.known[code];
+      toast(`${known ? known.name : "That item"} isn't in ${currentLoc.name}`, "bad");
+      return;
+    }
+    existing.qty -= 1;
+    if(existing.qty <= 0){
+      const copy = {...existing};
+      db.items = db.items.filter(x => x.id !== existing.id);
+      save();
+      toast(`${copy.name} — all gone`, "out", () => { db.items.push(copy); save(); });
+    } else {
+      save();
+      toast(`${existing.name} — ${existing.qty} left`, "out");
+    }
+    return;
+  }
+
+  // stock in
+  if(existing){
+    existing.qty += 1;
+    existing.updatedAt = Date.now();
+    save();
+    toast(`${existing.name} — ${existing.qty} on hand`);
+    return;
+  }
+
+  // new to this place: use what we already know, else ask the web, else ask you
+  let info = db.known[code] || null;
+  if(!info){
+    $("#scan-hint").textContent = "Looking it up\u2026";
+    info = await lookup(code);
+    $("#scan-hint").textContent = "Hold the barcode inside the frame.";
+  }
+
+  const elsewhere = db.items.find(i => i.barcode === code);
+  if(!info && elsewhere) info = {name:elsewhere.name, brand:elsewhere.brand, category:elsewhere.category};
+
+  pauseScan();
+  confirmSheet(code, info);
+}
+
+/* ---- Open Food Facts ---- */
+async function lookup(code){
+  const url = "https://world.openfoodfacts.org/api/v0/product/" + encodeURIComponent(code) +
+              ".json?fields=product_name,brands,categories_tags";
+  try{
+    const ctl = new AbortController();
+    const t = setTimeout(() => ctl.abort(), 6000);
+    const r = await fetch(url, {signal: ctl.signal});
+    clearTimeout(t);
+    if(!r.ok) return null;
+    const d = await r.json();
+    if(d.status !== 1 || !d.product) return null;
+    const p = d.product;
+    const name = (p.product_name || "").trim();
+    if(!name) return null;
+    return {
+      name,
+      brand: (p.brands || "").split(",")[0].trim(),
+      category: guessCategory(p.categories_tags || [])
+    };
+  }catch(e){ return null; }
+}
+
+function guessCategory(tags){
+  const t = tags.join(" ").toLowerCase();
+  const map = [
+    ["Frozen",          ["frozen"]],
+    ["Dairy",           ["dairy","milk","cheese","yogurt","yoghurt","butter","cream"]],
+    ["Meat & fish",     ["meat","fish","seafood","poultry","chicken","beef","pork"]],
+    ["Produce",         ["fresh-vegetables","fresh-fruits","fruits","vegetables","salad"]],
+    ["Grains & pasta",  ["pasta","rice","cereal","bread","flour","grain","noodle"]],
+    ["Canned & jarred", ["canned","tinned","jarred","preserve","sauce","soup"]],
+    ["Baking",          ["baking","sugar","yeast","cocoa"]],
+    ["Spices",          ["spice","herb","seasoning","condiment"]],
+    ["Snacks",          ["snack","biscuit","chip","crisp","chocolate","candy","confectionery"]],
+    ["Drinks",          ["beverage","drink","water","juice","coffee","tea","soda"]]
+  ];
+  for(const [cat, keys] of map)
+    if(keys.some(k => t.includes(k)) && db.categories.includes(cat)) return cat;
+  return db.categories.includes("Other") ? "Other" : db.categories[0];
+}
+
+/* ---- confirm sheet after a scan ---- */
+function confirmSheet(code, info){
+  const found = !!info;
+  openSheet(`
+    <h2>${found ? "Found it" : "New to you"} \u2192 ${esc(currentLoc.name)}</h2>
+    <label for="f-n">Name</label>
+    <input type="text" id="f-n" value="${found?esc(info.name):""}"
+      placeholder="What is it?" autocomplete="off">
+    <label for="f-b">Brand <span style="text-transform:none;letter-spacing:0">(optional)</span></label>
+    <input type="text" id="f-b" value="${found&&info.brand?esc(info.brand):""}" autocomplete="off">
+    <label for="f-c">Category</label>
+    <select id="f-c">${catOptions(found?info.category:undefined)}</select>
+    <label for="f-q">Quantity</label>
+    <input type="number" id="f-q" value="1" min="1" inputmode="numeric">
+    <p class="hint">${found
+      ? "Barcode " + esc(code) + " · from Open Food Facts"
+      : "Barcode " + esc(code) + " · not in the database. Name it once and it'll be instant next time."}</p>
+    <div class="sheetbtns">
+      <button class="btn ghost" id="f-skip">Skip</button>
+      <button class="btn primary" id="f-add">Add</button>
+    </div>`, s => {
+    s.querySelector("#f-skip").onclick = closeSheet;
+    s.querySelector("#f-add").onclick = () => {
+      const name = s.querySelector("#f-n").value.trim();
+      if(!name){ toast("Give it a name.","bad"); return; }
+      const rec = {
+        id: uid(), name,
+        brand: s.querySelector("#f-b").value.trim(),
+        category: s.querySelector("#f-c").value,
+        locationId: currentLoc.id,
+        qty: Math.max(1, parseInt(s.querySelector("#f-q").value,10) || 1),
+        barcode: code, updatedAt: Date.now()
+      };
+      db.items.push(rec);
+      db.known[code] = {name:rec.name, brand:rec.brand, category:rec.category};
+      save(); closeSheet();
+      toast(`${name} \u2192 ${currentLoc.name}`);
+    };
+    if(!found) setTimeout(()=>s.querySelector("#f-n").focus(),150);
+  });
+}
+
+/* ============================================================
+   BOOT
+   ============================================================ */
+renderHome();
+save();   // runs here, not at load time, so toast() and $() already exist
+
+if(!Store.persistent){
+  toast("This preview can't save. Host the file to keep your list.","bad");
+} else if(unreadable){
+  toast("Saved data was damaged and couldn't be read. Starting fresh — the old copy is parked under pantry.v1.unreadable.","bad");
+}
+window.addEventListener("pagehide", stopScan);
+</script>
+</body>
+</html>

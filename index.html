@@ -158,6 +158,7 @@ input,select{font:inherit;color:inherit}
   text-transform:uppercase;letter-spacing:.1em}
 .scanhead .loc{font-family:var(--mono);font-size:12px;opacity:.75;margin-left:auto}
 .scanhead .x{font-size:22px;line-height:1;padding:0 4px 0 8px;font-weight:600}
+.readerwrap{position:relative;flex:1;display:flex;min-height:0;overflow:hidden;background:#000}
 #reader{width:100%;flex:1;position:relative;overflow:hidden;background:#000}
 #reader video{width:100%!important;height:100%!important;object-fit:cover}
 #reader img{display:none}
@@ -284,7 +285,11 @@ input[type=file]{width:100%;font-size:14px;color:var(--muted);padding:10px 0}
     <span class="lbl" id="scan-mode">Stock in</span>
     <span class="loc" id="scan-loc"></span>
   </div>
-  <div id="reader"><div class="flash" id="flash"></div></div>
+  <div class="readerwrap">
+    <div id="reader"></div>
+    <!-- the flash sits outside #reader: html5-qrcode empties that element on start() -->
+    <div class="flash" id="flash"></div>
+  </div>
   <div class="scanfoot">
     <p id="scan-hint">Hold the barcode inside the frame.</p>
     <button class="linkbtn" id="btn-type">Type it</button>
@@ -442,6 +447,9 @@ function show(v){
   document.querySelectorAll(".view").forEach(n => n.classList.remove("active"));
   $("#view-" + v).classList.add("active");
 }
+
+const HINT = "Hold the barcode inside the frame.";
+function hint(msg){ const h = $("#scan-hint"); if(h) h.textContent = msg; }
 
 function beep(){
   try{
@@ -818,12 +826,12 @@ async function startScan(mode){
   $("#scanhead").style.setProperty("--mode", colour);
   $("#scan-mode").textContent = mode === "in" ? "Stock in" : "Take out";
   $("#scan-loc").textContent  = currentLoc.name;
-  $("#scan-hint").textContent = "Hold the barcode inside the frame.";
+  hint(HINT);
   show("scan");
   lastCode = ""; lastAt = 0;
 
   if(typeof Html5Qrcode === "undefined"){
-    $("#scan-hint").textContent = "Scanner library didn't load — check your connection, or use Type it.";
+    hint("Scanner library didn't load — check your connection, or use Type it.");
     return;
   }
   try{
@@ -840,8 +848,7 @@ async function startScan(mode){
       () => {}
     );
   }catch(err){
-    $("#scan-hint").textContent =
-      "No camera. Allow camera access in Safari settings, or use Type it.";
+    hint("No camera. Allow camera access in Safari settings, or use Type it.");
     console.error(err);
   }
 }
@@ -859,14 +866,27 @@ $("#btn-scan-in").onclick  = () => startScan("in");
 $("#btn-scan-out").onclick = () => startScan("out");
 $("#btn-scan-close").onclick = async () => { await stopScan(); renderLoc(); show("location"); };
 
+function flash(){
+  const f = $("#flash");
+  if(!f) return;
+  f.classList.remove("go"); void f.offsetWidth; f.classList.add("go");
+}
+
 function onScan(code){
   const now = Date.now();
   if(code === lastCode && now - lastAt < 2500) return;
   lastCode = code; lastAt = now;
-  const f = $("#flash");
-  f.classList.remove("go"); void f.offsetWidth; f.classList.add("go");
+  clearTimeout(onScan.t);
+  flash();
   beep();
-  handleCode(code);
+  hint("Read " + code);            // proof on screen that the decode landed
+  Promise.resolve()
+    .then(() => handleCode(code))
+    .then(() => { onScan.t = setTimeout(() => hint(HINT), 1600); })
+    .catch(err => {
+      console.error(err);
+      hint("Couldn\u2019t handle " + code + " \u2014 try again, or use Type it.");
+    });
 }
 
 $("#btn-type").onclick = () => {
@@ -925,9 +945,9 @@ async function handleCode(code){
   // new to this place: use what we already know, else ask the web, else ask you
   let info = db.known[code] || null;
   if(!info){
-    $("#scan-hint").textContent = "Looking it up\u2026";
+    hint("Looking it up\u2026");
     info = await lookup(code);
-    $("#scan-hint").textContent = "Hold the barcode inside the frame.";
+    hint(HINT);
   }
 
   const elsewhere = db.items.find(i => i.barcode === code);
